@@ -1,0 +1,6 @@
+ChatMTF 2.7.4
+
+- Softer chat colors with low-saturation pink/blue bubbles instead of pure white message blocks.
+- Markdown replies now inherit the chat bubble text color.
+- Android now proactively requests notification posting permission on first foreground launch where the OS requires it.
+- Enabling heartbeat also enables notification collection and opens Android notification access settings when needed.

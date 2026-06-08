@@ -131,6 +131,11 @@ private fun AppContent(
 
     val notificationPermissionController = koinInject<NotificationPermissionController>()
     SetupNotificationPermissionHandler(notificationPermissionController)
+    LaunchedEffect(notificationPermissionController) {
+        if (currentPlatform is Platform.Mobile.Android) {
+            notificationPermissionController.requestPermission()
+        }
+    }
 
     val smsPermissionController = koinInject<SmsPermissionController>()
     SetupSmsPermissionHandler(smsPermissionController)

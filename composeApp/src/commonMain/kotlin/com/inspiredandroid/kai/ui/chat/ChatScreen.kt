@@ -73,6 +73,7 @@ import androidx.compose.ui.draganddrop.DragAndDropTarget
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.TextFieldValue
@@ -751,10 +752,15 @@ private fun ChatModeScreen(
                             }
 
                             Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                                val chatBackground = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) {
+                                    MaterialTheme.colorScheme.background
+                                } else {
+                                    Color(0xFFEFF6FB)
+                                }
                                 LazyColumn(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .background(Color(0xFFF7FAFC)),
+                                        .background(chatBackground),
                                     state = listState,
                                     contentPadding = PaddingValues(top = 10.dp, bottom = 10.dp),
                                     horizontalAlignment = CenterHorizontally,

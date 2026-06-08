@@ -12,12 +12,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,11 +43,9 @@ fun MarkdownContent(
     onUiCallback: (event: String, data: Map<String, String>) -> Unit = { _, _ -> },
     frozen: FrozenSubmission? = null,
 ) {
-    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
-        Column(modifier) {
-            for (block in document.blocks) {
-                BlockRenderer(block, isInteractive, onUiCallback, frozen)
-            }
+    Column(modifier) {
+        for (block in document.blocks) {
+            BlockRenderer(block, isInteractive, onUiCallback, frozen)
         }
     }
 }

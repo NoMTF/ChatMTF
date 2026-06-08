@@ -458,17 +458,29 @@ class SettingsViewModel(
         dataRepository.setHeartbeatEnabled(enabled)
         if (enabled) {
             dataRepository.setSchedulingEnabled(true)
+            if (isNotificationsSupported) {
+                dataRepository.setNotificationsEnabled(true)
+            }
             if (_state.value.showDaemonToggle && !dataRepository.isDaemonEnabled()) {
                 dataRepository.setDaemonEnabled(true)
                 daemonController.start()
             }
             viewModelScope.launch { notificationPermissionController.requestPermission() }
+            if (isNotificationsSupported && !dataRepository.isNotificationListenerAccessGranted()) {
+                dataRepository.openNotificationListenerSettings()
+            }
         }
         _state.update {
             it.copy(
                 isHeartbeatEnabled = enabled,
                 isSchedulingEnabled = if (enabled) true else it.isSchedulingEnabled,
                 isDaemonEnabled = if (enabled && it.showDaemonToggle) true else it.isDaemonEnabled,
+                isNotificationsEnabled = if (enabled && isNotificationsSupported) true else it.isNotificationsEnabled,
+                notificationListenerAccessGranted = if (enabled && isNotificationsSupported) {
+                    dataRepository.isNotificationListenerAccessGranted()
+                } else {
+                    it.notificationListenerAccessGranted
+                },
             )
         }
     }

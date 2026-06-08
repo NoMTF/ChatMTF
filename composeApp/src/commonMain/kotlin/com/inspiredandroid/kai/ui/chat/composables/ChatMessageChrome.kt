@@ -13,14 +13,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.inspiredandroid.kai.ui.softBlue
@@ -40,20 +43,33 @@ internal fun ChatMessageChrome(
     content: @Composable () -> Unit,
 ) {
     val isUser = author == MessageAuthor.User
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val avatarBackground = if (isUser) {
         Brush.linearGradient(listOf(Color(0xFFBFE1FF), Color(0xFFF8DDE9)))
     } else {
         Brush.linearGradient(listOf(softBlue.copy(alpha = 0.95f), softPink.copy(alpha = 0.9f)))
     }
-    val bubbleColor = if (isUser) {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.86f)
-    } else {
-        MaterialTheme.colorScheme.surface
+    val bubbleColor = when {
+        isDark && isUser -> Color(0xFF20384E)
+        isDark -> Color(0xFF242B34)
+        isUser -> Color(0xFFDCEEFF)
+        else -> Color(0xFFFFF5FA)
     }
-    val bubbleBorder = if (isUser) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+    val bubbleBorder = when {
+        isDark && isUser -> Color(0xFF35536D)
+        isDark -> Color(0xFF3B4652)
+        isUser -> Color(0xFFC5DDF0)
+        else -> Color(0xFFEED7E4)
+    }
+    val contentColor = when {
+        isDark -> Color(0xFFE9EEF5)
+        isUser -> Color(0xFF17324F)
+        else -> Color(0xFF2B3340)
+    }
+    val nicknameColor = if (isDark) {
+        MaterialTheme.colorScheme.onSurfaceVariant
     } else {
-        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)
+        Color(0xFF6C7A88)
     }
     val bubbleShape = if (isUser) {
         RoundedCornerShape(topStart = 16.dp, topEnd = 4.dp, bottomStart = 16.dp, bottomEnd = 16.dp)
@@ -85,7 +101,7 @@ internal fun ChatMessageChrome(
             Text(
                 text = nickname,
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = nicknameColor,
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
             )
             Box(
@@ -94,7 +110,9 @@ internal fun ChatMessageChrome(
                     .background(bubbleColor, bubbleShape)
                     .border(1.dp, bubbleBorder, bubbleShape),
             ) {
-                content()
+                CompositionLocalProvider(LocalContentColor provides contentColor) {
+                    content()
+                }
             }
             actions?.let {
                 Box(
