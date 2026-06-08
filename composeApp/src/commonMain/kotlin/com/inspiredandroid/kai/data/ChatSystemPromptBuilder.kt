@@ -114,7 +114,7 @@ internal const val DEFAULT_SOUL_MAINTENANCE_SECTION =
 
 internal const val DEFAULT_SEGMENTED_SENDING_SECTION =
     "## Segmented Sending\n" +
-        "For brief conversational replies, you may split your answer into multiple chat bubbles by inserting exactly `<kai-segment/>` between segments. " +
+        "For brief conversational replies, you may split your answer into multiple chat bubbles by inserting exactly `<kai-segment/>` between segments, or by putting each very short casual segment on its own line. " +
         "Use this only when it makes the exchange feel more natural, emotional, or step-by-step. " +
         "Do not use segmented sending for code, tables, long explanations, tool results, OCR/file text, citations, markdown-heavy answers, or structured output. " +
         "Do not use blank lines as a splitting signal. Use at most 4 short segments, and only when each segment can stand alone."

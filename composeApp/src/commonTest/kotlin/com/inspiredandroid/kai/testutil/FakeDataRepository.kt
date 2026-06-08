@@ -368,6 +368,43 @@ class FakeDataRepository : DataRepository {
         dynamicUiEnabled = enabled
     }
 
+    private var segmentedSendingEnabled = true
+
+    override fun isSegmentedSendingEnabled(): Boolean = segmentedSendingEnabled
+
+    override fun setSegmentedSendingEnabled(enabled: Boolean) {
+        segmentedSendingEnabled = enabled
+    }
+
+    private var ocrEnabled = false
+    private var ocrInstanceId = ""
+    private var ocrModelId = ""
+    private var ocrBaseUrl = ""
+
+    override fun isOcrEnabled(): Boolean = ocrEnabled
+
+    override fun setOcrEnabled(enabled: Boolean) {
+        ocrEnabled = enabled
+    }
+
+    override fun getOcrInstanceId(): String = ocrInstanceId
+
+    override fun setOcrInstanceId(instanceId: String) {
+        ocrInstanceId = instanceId
+    }
+
+    override fun getOcrModelId(): String = ocrModelId
+
+    override fun setOcrModelId(modelId: String) {
+        ocrModelId = modelId
+    }
+
+    override fun getOcrBaseUrl(): String = ocrBaseUrl
+
+    override fun setOcrBaseUrl(baseUrl: String) {
+        ocrBaseUrl = baseUrl
+    }
+
     private var themeMode: ThemeMode = ThemeMode.System
 
     override fun getThemeMode(): ThemeMode = themeMode
