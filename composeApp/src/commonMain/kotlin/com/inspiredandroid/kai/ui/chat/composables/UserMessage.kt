@@ -1,18 +1,15 @@
 package com.inspiredandroid.kai.ui.chat.composables
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Icon
@@ -45,16 +42,13 @@ internal fun UserMessage(
     attachments: ImmutableList<Attachment> = persistentListOf(),
 ) {
     val showFullScreen = LocalShowFullScreenImage.current
-    SelectionContainer {
-        Row(Modifier.padding(16.dp)) {
-            Spacer(Modifier.weight(1f))
+    ChatMessageChrome(
+        author = MessageAuthor.User,
+        nickname = "我",
+    ) {
+        SelectionContainer {
             Column(
-                modifier = Modifier
-                    .background(
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.75f),
-                        RoundedCornerShape(8.dp),
-                    )
-                    .padding(16.dp),
+                modifier = Modifier.padding(12.dp),
                 horizontalAlignment = Alignment.End,
             ) {
                 val images = attachments.filter { it.mimeType.startsWith("image/") }
@@ -72,11 +66,11 @@ internal fun UserMessage(
                             bitmap = imageBitmap,
                             contentDescription = null,
                             modifier = Modifier
-                                .widthIn(max = 200.dp)
+                                .size(width = 200.dp, height = 140.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .handCursor()
                                 .clickable { showFullScreen(imageBitmap) },
-                            contentScale = ContentScale.FillWidth,
+                            contentScale = ContentScale.Crop,
                         )
                         Spacer(Modifier.height(8.dp))
                     }

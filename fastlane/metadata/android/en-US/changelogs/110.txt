@@ -1,0 +1,7 @@
+ChatMTF 2.7.3
+
+- WeChat-style chat bubbles with avatars and nicknames.
+- Proactive messages now use a high-priority Android message notification channel with sound and vibration.
+- Heartbeat setup now enables scheduling, starts Android daemon mode, and requests notification permission.
+- Background daemon restoration after reboot and app updates when allowed by Android.
+- Clearer settings copy for battery, background running, and auto-start.

@@ -456,7 +456,21 @@ class SettingsViewModel(
 
     private fun onToggleHeartbeat(enabled: Boolean) {
         dataRepository.setHeartbeatEnabled(enabled)
-        _state.update { it.copy(isHeartbeatEnabled = enabled) }
+        if (enabled) {
+            dataRepository.setSchedulingEnabled(true)
+            if (_state.value.showDaemonToggle && !dataRepository.isDaemonEnabled()) {
+                dataRepository.setDaemonEnabled(true)
+                daemonController.start()
+            }
+            viewModelScope.launch { notificationPermissionController.requestPermission() }
+        }
+        _state.update {
+            it.copy(
+                isHeartbeatEnabled = enabled,
+                isSchedulingEnabled = if (enabled) true else it.isSchedulingEnabled,
+                isDaemonEnabled = if (enabled && it.showDaemonToggle) true else it.isDaemonEnabled,
+            )
+        }
     }
 
     private fun onChangeHeartbeatInterval(minutes: Int) {

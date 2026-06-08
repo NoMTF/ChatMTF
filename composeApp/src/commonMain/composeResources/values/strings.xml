@@ -94,7 +94,7 @@
   <string name="bot_message_regenerate_content_description">重新生成</string>
   <string name="error_empty_response">未收到回复。请尝试开始新对话或缩短您的消息。</string>
   <string name="settings_daemon_mode">后台模式</string>
-  <string name="settings_daemon_mode_description">让 ChatMTF 在后台持续运行，以便即使应用不在前台时计划任务也能执行。</string>
+  <string name="settings_daemon_mode_description">让 ChatMTF 在后台持续运行，用于主动消息、心跳和计划任务。建议在系统电池设置中允许后台运行/自启动，并把电池策略设为不限制。</string>
   <string name="settings_scheduled_tasks">计划任务</string>
   <string name="settings_scheduled_tasks_description">AI 安排的未来执行任务。让 AI 提醒您或稍后运行某些操作来创建计划任务。</string>
   <string name="settings_scheduled_tasks_cancel">取消任务</string>
@@ -135,7 +135,7 @@
   <string name="service_free_expert">免费专家</string>
   <string name="settings_heartbeat">心跳</string>
   <string name="settings_heartbeat_default_prompt">[HEARTBEAT] 这是一次主动心跳。先查看当前时间、记忆、待办、最近聊天、邮件、短信、通知和上一次心跳结果。只有在有自然理由时才主动发消息；如果没有明确价值或只是想寒暄，请准确回复：HEARTBEAT_OK。主动消息应使用简体中文，1-6 段短句，最多提出 1 个温和问题，不要提到心跳、自检或后台自动化。</string>
-  <string name="settings_heartbeat_description">让 AI 在后台定期检查记忆、待办和近期上下文；有必要时会主动发一条简短消息。在活跃时段每 %1$d 分钟运行一次。</string>
+  <string name="settings_heartbeat_description">让 AI 在后台定期检查记忆、待办和近期上下文；有必要时会像聊天消息一样主动提醒。在活跃时段每 %1$d 分钟运行一次。</string>
   <string name="settings_heartbeat_prompt_label">心跳提示词</string>
   <string name="settings_heartbeat_recent">最近活动</string>
   <string name="settings_heartbeat_refresh">触发心跳</string>

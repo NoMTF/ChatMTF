@@ -16,6 +16,7 @@ class AndroidDaemonController : DaemonController {
     fun shouldAutoStart(): Boolean = appSettings.isDaemonEnabled()
 
     override fun start() {
+        if (!appSettings.isDaemonEnabled()) return
         try {
             val intent = Intent(context, DaemonService::class.java)
             context.startForegroundService(intent)

@@ -19,6 +19,7 @@ import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -71,6 +72,7 @@ import androidx.compose.ui.draganddrop.DragAndDropEvent
 import androidx.compose.ui.draganddrop.DragAndDropTarget
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.TextFieldValue
@@ -750,8 +752,11 @@ private fun ChatModeScreen(
 
                             Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                                 LazyColumn(
-                                    modifier = Modifier.fillMaxSize(),
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color(0xFFF7FAFC)),
                                     state = listState,
+                                    contentPadding = PaddingValues(top = 10.dp, bottom = 10.dp),
                                     horizontalAlignment = CenterHorizontally,
                                 ) {
                                     items(uiState.history, key = { it.id }, contentType = { it.role }) { history ->

@@ -1,17 +1,16 @@
 package com.inspiredandroid.kai
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
+import android.media.RingtoneManager
 import androidx.core.app.NotificationCompat
+import androidx.core.app.Person
 import com.inspiredandroid.kai.shared.R
-import chatmtf.composeapp.generated.resources.Res
-import chatmtf.composeapp.generated.resources.notification_channel_description
-import chatmtf.composeapp.generated.resources.notification_channel_name
-import kotlinx.coroutines.runBlocking
-import org.jetbrains.compose.resources.getString
 import org.koin.java.KoinJavaComponent.inject
 
 /**
@@ -21,8 +20,12 @@ import org.koin.java.KoinJavaComponent.inject
  */
 const val EXTRA_OPEN_HEARTBEAT = "com.inspiredandroid.kai.OPEN_HEARTBEAT"
 
-/** Shared with the AI `send_notification` tool — ensures the channel is created once. */
-private const val CHANNEL_ID = "kai_ai_notifications"
+/**
+ * Dedicated high-importance channel for proactive ChatMTF messages. Android keeps
+ * a channel's importance after first creation, so this intentionally does not
+ * reuse the older generic AI notification channel.
+ */
+private const val CHANNEL_ID = "chatmtf_proactive_messages"
 
 /**
  * Fixed ID so a new heartbeat report replaces any earlier unread one in the tray
@@ -47,12 +50,37 @@ actual fun sendHeartbeatNotification(title: String, body: String) {
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
+    val sentAt = System.currentTimeMillis()
+    val senderName = title.ifBlank { "ChatMTF" }
+    val me = Person.Builder()
+        .setName("我")
+        .build()
+    val sender = Person.Builder()
+        .setName(senderName)
+        .setImportant(true)
+        .build()
+    val style = NotificationCompat.MessagingStyle(me)
+        .setConversationTitle(senderName)
+        .addMessage(
+            NotificationCompat.MessagingStyle.Message(
+                body,
+                sentAt,
+                sender,
+            ),
+        )
+
     val notification = NotificationCompat.Builder(context, CHANNEL_ID)
         .setSmallIcon(R.drawable.ic_notification)
-        .setContentTitle(title)
+        .setContentTitle(senderName)
         .setContentText(body)
-        .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        .setStyle(style)
+        .setPriority(NotificationCompat.PRIORITY_HIGH)
+        .setCategory(Notification.CATEGORY_MESSAGE)
+        .setDefaults(NotificationCompat.DEFAULT_SOUND or NotificationCompat.DEFAULT_VIBRATE)
+        .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+        .setWhen(sentAt)
+        .setShowWhen(true)
+        .addPerson(sender)
         .setContentIntent(pendingIntent)
         .setAutoCancel(true)
         .build()
@@ -62,11 +90,19 @@ actual fun sendHeartbeatNotification(title: String, body: String) {
 
 private fun ensureChannel(manager: NotificationManager) {
     if (manager.getNotificationChannel(CHANNEL_ID) != null) return
-    val name = runBlocking { getString(Res.string.notification_channel_name) }
-    val description = runBlocking { getString(Res.string.notification_channel_description) }
+    val sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+    val audioAttributes = AudioAttributes.Builder()
+        .setUsage(AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_INSTANT)
+        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+        .build()
     manager.createNotificationChannel(
-        NotificationChannel(CHANNEL_ID, name, NotificationManager.IMPORTANCE_DEFAULT).apply {
-            this.description = description
+        NotificationChannel(CHANNEL_ID, "ChatMTF 消息", NotificationManager.IMPORTANCE_HIGH).apply {
+            description = "ChatMTF 主动消息和长期记忆提醒"
+            enableVibration(true)
+            vibrationPattern = longArrayOf(0L, 80L, 60L, 120L)
+            lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+            setShowBadge(true)
+            setSound(sound, audioAttributes)
         },
     )
 }

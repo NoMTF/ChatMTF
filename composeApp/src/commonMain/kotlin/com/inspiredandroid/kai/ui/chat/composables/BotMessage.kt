@@ -93,108 +93,111 @@ internal fun BotMessage(
         onUiCallback ?: { _, _ -> }
     }
 
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            val nonBlankSegments = remember(reasoningSegments) {
-                reasoningSegments.filter { it.isNotBlank() }.toImmutableList()
+    val nonBlankSegments = remember(reasoningSegments) {
+        reasoningSegments.filter { it.isNotBlank() }.toImmutableList()
+    }
+    ChatMessageChrome(
+        author = MessageAuthor.Assistant,
+        nickname = "ChatMTF",
+        actions = if (message.isEmpty()) {
+            null
+        } else {
+            {
+                Row {
+                    if (textToSpeech != null) {
+                        val componentScope = rememberCoroutineScope()
+                        SmallIconButton(
+                            iconResource = if (isSpeaking) Res.drawable.ic_stop else Res.drawable.ic_volume_up,
+                            contentDescription = stringResource(Res.string.bot_message_speech_content_description),
+                            onClick = {
+                                componentScope.launch(getBackgroundDispatcher()) {
+                                    textToSpeech.stop()
+                                    if (isSpeaking) {
+                                        setIsSpeaking(false)
+                                    } else {
+                                        setIsSpeaking(true)
+                                        try {
+                                            textToSpeech.say(text = message.toSpeakableText())
+                                        } catch (ignore: TextToSpeechSynthesisInterruptedError) {
+                                            // Expected interruption - no action needed
+                                        } catch (e: Exception) {
+                                            // Handle TTS errors gracefully (service failure, audio issues, etc.)
+                                        }
+                                        setIsSpeaking(false)
+                                    }
+                                }
+                            },
+                        )
+                    }
+                    val clipboardManager = LocalClipboardManager.current
+                    SmallIconButton(
+                        iconResource = Res.drawable.ic_copy,
+                        contentDescription = stringResource(Res.string.bot_message_copy_content_description),
+                        onClick = {
+                            clipboardManager.setText(buildAnnotatedString { append(message) })
+                        },
+                    )
+                    val uriHandler = LocalUriHandler.current
+                    SmallIconButton(
+                        iconResource = Res.drawable.ic_flag,
+                        contentDescription = stringResource(Res.string.bot_message_flag_content_description),
+                        onClick = {
+                            uriHandler.openUri("https://form.jotform.com/250014908169355")
+                        },
+                    )
+                    if (onRegenerate != null) {
+                        SmallIconButton(
+                            iconResource = Res.drawable.ic_refresh,
+                            contentDescription = stringResource(Res.string.bot_message_regenerate_content_description),
+                            onClick = onRegenerate,
+                        )
+                    }
+                }
             }
-            if (nonBlankSegments.isNotEmpty()) {
-                ReasoningBlockquote(
-                    segments = nonBlankSegments,
-                    modifier = Modifier.fillMaxWidth()
-                        .padding(start = 16.dp, top = 12.dp, end = 16.dp),
-                )
+        },
+    ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                if (nonBlankSegments.isNotEmpty()) {
+                    ReasoningBlockquote(
+                        segments = nonBlankSegments,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                if (message.isNotEmpty()) {
+                    val answerTopPadding = if (nonBlankSegments.isNotEmpty()) 8.dp else 0.dp
+                    SelectionContainer {
+                        MarkdownContent(
+                            document = document,
+                            isInteractive = effectiveInteractive,
+                            onUiCallback = kaiUiCallback,
+                            frozen = effectiveFrozen,
+                            modifier = Modifier.fillMaxWidth().padding(top = answerTopPadding),
+                        )
+                    }
+                }
             }
-            if (message.isNotEmpty()) {
-                // When reasoning is shown above, the Thinking row already provides
-                // the visual gap to the answer — drop the duplicated top inset.
-                val answerTopPadding = if (nonBlankSegments.isNotEmpty()) 6.dp else 16.dp
-                SelectionContainer {
-                    MarkdownContent(
-                        document = document,
-                        isInteractive = effectiveInteractive,
-                        onUiCallback = kaiUiCallback,
-                        frozen = effectiveFrozen,
-                        modifier = Modifier.fillMaxWidth()
-                            .padding(start = 16.dp, top = answerTopPadding, end = 16.dp, bottom = 8.dp),
+            if (frozen != null && onResubmit != null) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .handCursor()
+                        .clickable { isEditing = !isEditing },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = if (isEditing) Icons.Default.Close else Icons.Default.Edit,
+                        contentDescription = if (isEditing) "Cancel edit" else "Edit submission",
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
         }
-        if (frozen != null && onResubmit != null) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(8.dp)
-                    .size(28.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceContainer)
-                    .handCursor()
-                    .clickable { isEditing = !isEditing },
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = if (isEditing) Icons.Default.Close else Icons.Default.Edit,
-                    contentDescription = if (isEditing) "Cancel edit" else "Edit submission",
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-    if (message.isEmpty()) return
-    Row(Modifier.padding(horizontal = 8.dp)) {
-        if (textToSpeech != null) {
-            val componentScope = rememberCoroutineScope()
-            SmallIconButton(
-                iconResource = if (isSpeaking) Res.drawable.ic_stop else Res.drawable.ic_volume_up,
-                contentDescription = stringResource(Res.string.bot_message_speech_content_description),
-                onClick = {
-                    componentScope.launch(getBackgroundDispatcher()) {
-                        textToSpeech.stop()
-                        if (isSpeaking) {
-                            setIsSpeaking(false)
-                        } else {
-                            setIsSpeaking(true)
-                            try {
-                                textToSpeech.say(text = message.toSpeakableText())
-                            } catch (ignore: TextToSpeechSynthesisInterruptedError) {
-                                // Expected interruption - no action needed
-                            } catch (e: Exception) {
-                                // Handle TTS errors gracefully (service failure, audio issues, etc.)
-                            }
-                            setIsSpeaking(false)
-                        }
-                    }
-                },
-            )
-        }
-        val clipboardManager = LocalClipboardManager.current
-        SmallIconButton(
-            iconResource = Res.drawable.ic_copy,
-            contentDescription = stringResource(Res.string.bot_message_copy_content_description),
-            onClick = {
-                clipboardManager.setText(buildAnnotatedString { append(message) })
-            },
-        )
-        run {
-            val uriHandler = LocalUriHandler.current
-            SmallIconButton(
-                iconResource = Res.drawable.ic_flag,
-                contentDescription = stringResource(Res.string.bot_message_flag_content_description),
-                onClick = {
-                    uriHandler.openUri("https://form.jotform.com/250014908169355")
-                },
-            )
-        }
-        if (onRegenerate != null) {
-            SmallIconButton(
-                iconResource = Res.drawable.ic_refresh,
-                contentDescription = stringResource(Res.string.bot_message_regenerate_content_description),
-                onClick = onRegenerate,
-            )
-        }
-        Spacer(Modifier.weight(1f))
     }
 }
 

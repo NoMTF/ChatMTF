@@ -24,10 +24,10 @@ internal fun SmallIconButton(
 ) {
     SmallIconButtonBox(onClick) {
         Icon(
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(18.dp),
             painter = painterResource(iconResource),
             contentDescription = contentDescription,
-            tint = MaterialTheme.colorScheme.onBackground,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
         )
     }
 }
@@ -40,10 +40,10 @@ internal fun SmallIconButton(
 ) {
     SmallIconButtonBox(onClick) {
         Icon(
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(18.dp),
             imageVector = imageVector,
             contentDescription = contentDescription,
-            tint = MaterialTheme.colorScheme.onBackground,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
         )
     }
 }
@@ -51,7 +51,7 @@ internal fun SmallIconButton(
 @Composable
 private fun SmallIconButtonBox(onClick: () -> Unit, content: @Composable () -> Unit) {
     Box(
-        modifier = Modifier.size(36.dp).clip(CircleShape).handCursor().clickable { onClick() },
+        modifier = Modifier.size(32.dp).clip(CircleShape).handCursor().clickable { onClick() },
         contentAlignment = Alignment.Center,
     ) { content() }
 }
