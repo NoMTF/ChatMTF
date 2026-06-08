@@ -8,6 +8,26 @@ package com.inspiredandroid.kai.data
 
 import kotlin.time.Instant
 
+/** Runtime state rendered into the heartbeat prompt so proactive messages can match the user's day. */
+data class HeartbeatRuntimeContext(
+    val nowLocalIsoWithOffset: String,
+    val timeZoneId: String,
+    val nowUtcIsoString: String,
+)
+
+/** A compact snapshot of a recent visible conversation. */
+data class HeartbeatRecentConversation(
+    val title: String,
+    val updatedAtEpochMs: Long,
+    val messages: List<HeartbeatRecentMessage>,
+)
+
+/** One recent user/assistant message rendered under [HeartbeatRecentConversation]. */
+data class HeartbeatRecentMessage(
+    val role: String,
+    val content: String,
+)
+
 /** A pending (polled-but-not-yet-heartbeat-picked-up) email rendered into the `## New Emails` section. */
 internal data class HeartbeatPendingEmail(
     val accountEmail: String,
@@ -43,8 +63,10 @@ internal data class HeartbeatPromotionCandidate(
  * Composes the heartbeat prompt.
  *
  * @param customOrDefaultPrompt leading free text — custom user prompt or [HeartbeatManager.DEFAULT_HEARTBEAT_PROMPT]
+ * @param runtime local/UTC time snapshot; null = section omitted
  * @param heartbeatAdditions tasks with trigger=HEARTBEAT; rendered as `## Heartbeat Additions` so their prompts run on every heartbeat. Empty list = section omitted
  * @param recentResponses last heartbeat responses to include for continuity; empty list = section omitted
+ * @param recentConversations compact recent chat context for gentle follow-ups; empty list = section omitted
  * @param pendingTasks time/cron tasks to include in the `## Pending Tasks` section (heartbeat tasks belong to [heartbeatAdditions] instead); empty list = section omitted
  * @param emailAccounts email account statuses; empty list = section omitted
  * @param pendingEmails new emails polled since the last heartbeat pickup; empty list = section omitted
@@ -54,8 +76,10 @@ internal data class HeartbeatPromotionCandidate(
  */
 internal fun buildHeartbeatPrompt(
     customOrDefaultPrompt: String,
+    runtime: HeartbeatRuntimeContext? = null,
     heartbeatAdditions: List<ScheduledTask>,
     recentResponses: List<String>,
+    recentConversations: List<HeartbeatRecentConversation> = emptyList(),
     pendingTasks: List<ScheduledTask>,
     emailAccounts: List<EmailAccountSummary>,
     pendingEmails: List<HeartbeatPendingEmail>,
@@ -65,6 +89,18 @@ internal fun buildHeartbeatPrompt(
 ): String = buildString {
     append(customOrDefaultPrompt)
     append("\n")
+
+    if (runtime != null) {
+        append("\n## Current Time\n")
+        append("- Local time: ")
+        append(runtime.nowLocalIsoWithOffset)
+        append(" (")
+        append(runtime.timeZoneId)
+        append(")\n")
+        append("- UTC: ")
+        append(runtime.nowUtcIsoString)
+        append('\n')
+    }
 
     if (heartbeatAdditions.isNotEmpty()) {
         append("\n## Heartbeat Additions\n")
@@ -87,6 +123,25 @@ internal fun buildHeartbeatPrompt(
             append(". ")
             append(response)
             append('\n')
+        }
+    }
+
+    if (recentConversations.isNotEmpty()) {
+        append("\n## Recent Chat Context\n")
+        append("Use this only for natural continuity or a gentle follow-up. Do not recap old chats unless the user would benefit.\n")
+        for (conversation in recentConversations) {
+            append("- Conversation: ")
+            append(conversation.title.ifBlank { "(untitled)" })
+            append(" (updated: ")
+            append(Instant.fromEpochMilliseconds(conversation.updatedAtEpochMs))
+            append(")\n")
+            for (message in conversation.messages) {
+                append("  - ")
+                append(message.role)
+                append(": ")
+                append(message.content)
+                append('\n')
+            }
         }
     }
 

@@ -2,10 +2,10 @@ package com.inspiredandroid.kai.data
 
 internal const val SEGMENT_MARKER = "<kai-segment/>"
 
-private const val MAX_SEGMENTS = 4
+private const val MAX_SEGMENTS = 8
 private const val MAX_SEGMENT_CHARS = 700
 private const val MAX_AUTO_SEGMENT_CHARS = 90
-private const val MAX_AUTO_TOTAL_CHARS = 320
+private const val MAX_AUTO_TOTAL_CHARS = 560
 
 internal fun parseSegmentedAssistantContent(content: String): List<String> {
     if (content.isBlank()) return listOf(content)

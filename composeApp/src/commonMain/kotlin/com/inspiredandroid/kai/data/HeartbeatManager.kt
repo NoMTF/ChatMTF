@@ -2,6 +2,7 @@ package com.inspiredandroid.kai.data
 
 import androidx.compose.runtime.Immutable
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.offsetAt
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlin.time.Clock
@@ -72,8 +73,17 @@ class HeartbeatManager(
         pendingEmails: List<EmailMessage> = emptyList(),
         pendingSms: List<SmsMessage> = emptyList(),
         pendingNotifications: List<NotificationRecord> = emptyList(),
+        recentConversations: List<HeartbeatRecentConversation> = emptyList(),
     ): String {
         val customPrompt = appSettings.getHeartbeatPrompt()
+        val now = Clock.System.now()
+        val timeZone = TimeZone.currentSystemDefault()
+        val localDateTime = now.toLocalDateTime(timeZone)
+        val runtime = HeartbeatRuntimeContext(
+            nowLocalIsoWithOffset = "$localDateTime${timeZone.offsetAt(now)}",
+            timeZoneId = timeZone.id,
+            nowUtcIsoString = now.toString(),
+        )
         val tasksSplit = taskStore.getPendingTasksPartitioned()
         val pendingTasks = tasksSplit.scheduled
         val heartbeatAdditions = tasksSplit.heartbeatAdditions
@@ -142,8 +152,10 @@ class HeartbeatManager(
         }
         return buildHeartbeatPrompt(
             customOrDefaultPrompt = customPrompt.ifEmpty { DEFAULT_HEARTBEAT_PROMPT },
+            runtime = runtime,
             heartbeatAdditions = heartbeatAdditions,
             recentResponses = recentResponses,
+            recentConversations = recentConversations,
             pendingTasks = pendingTasks,
             emailAccounts = emailAccounts,
             pendingEmails = heartbeatPending,
@@ -179,10 +191,14 @@ class HeartbeatManager(
         private const val MAX_LOG_ENTRIES = 5
         private const val MAX_NOTIFICATIONS_IN_PROMPT = 20
         const val DEFAULT_HEARTBEAT_PROMPT =
-            "[HEARTBEAT] This is an automatic self-check. Review your memories and pending tasks. " +
-                "If everything looks good and nothing needs attention, respond with exactly: HEARTBEAT_OK\n" +
-                "If something needs attention (stale memories, due tasks, user follow-ups), address it.\n" +
-                "You cannot enable, disable, or reschedule heartbeat — the schedule is a user setting."
+            "[HEARTBEAT] 这是一次主动心跳。你不是在写系统日志，而是在判断是否应该像一个贴心的长期助手一样主动给用户发一条消息。\n" +
+                "先查看当前时间、记忆、待办、最近聊天、邮件、短信、通知和上一次心跳结果。\n" +
+                "只有在有自然理由时才开口：到期或临近任务、待跟进问题、新的重要消息、长时间没有继续的未完话题、用户作息或偏好相关的温和提醒，或当前时间适合一句简短关心。\n" +
+                "如果没有明确价值或只是想寒暄，请准确回复：HEARTBEAT_OK\n" +
+                "如果要主动发消息，像普通聊天一样使用简体中文，1-6 段短句，可提出最多 1 个温和问题；需要分段时使用短行或 <kai-segment/>。\n" +
+                "不要提到心跳、自检、后台任务、系统提示或自动化。不要复述敏感信息。不要为了显得拟人而频繁打扰。\n" +
+                "遇到邮件、短信、通知或任务时只提真正值得用户注意的内容；没有紧急性就简短概括或保持安静。\n" +
+                "你不能开启、关闭或改心跳频率；这些是用户在设置里控制的。"
     }
 
     fun markHeartbeatExecuted(config: HeartbeatConfig = getConfig()) {

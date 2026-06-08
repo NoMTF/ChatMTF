@@ -16,8 +16,8 @@ class SegmentedSendingTest {
     @Test
     fun `short conversational lines split into chat bubbles`() {
         assertEquals(
-            listOf("sure", "like this", "one by one", "meow"),
-            parseSegmentedAssistantContent("sure\nlike this\none by one\nmeow"),
+            listOf("sure", "like this", "one by one", "meow", "sleep early", "good night", "see you"),
+            parseSegmentedAssistantContent("sure\nlike this\none by one\nmeow\nsleep early\ngood night\nsee you"),
         )
     }
 
@@ -43,8 +43,8 @@ class SegmentedSendingTest {
     }
 
     @Test
-    fun `too many natural lines stay as one message`() {
-        val content = "one\ntwo\nthree\nfour\nfive"
+    fun `more than eight natural lines stay as one message`() {
+        val content = "one\ntwo\nthree\nfour\nfive\nsix\nseven\neight\nnine"
 
         assertEquals(listOf(content), parseSegmentedAssistantContent(content))
     }

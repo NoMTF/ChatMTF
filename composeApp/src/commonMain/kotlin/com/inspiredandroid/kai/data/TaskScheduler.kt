@@ -41,6 +41,9 @@ class TaskScheduler(
         const val POLL_INTERVAL_MS = 60_000L
         const val MAX_BACKOFF_MS = 3_600_000L // 1 hour
         const val HEARTBEAT_CONTEXT_COUNT = 3
+        const val HEARTBEAT_RECENT_CHAT_COUNT = 3
+        const val HEARTBEAT_RECENT_MESSAGE_COUNT = 4
+        const val HEARTBEAT_RECENT_MESSAGE_CHARS = 220
 
         /** Per-task execution log size — surfaced in the task details sheet. */
         const val MAX_TASK_LOG_ENTRIES = 10
@@ -155,7 +158,14 @@ class TaskScheduler(
                 ?.messages?.takeLast(HEARTBEAT_CONTEXT_COUNT)
                 ?.map { it.content }
                 ?: emptyList()
-            val heartbeatPrompt = manager.buildHeartbeatPrompt(recentResponses, pendingEmails, pendingSms, pendingNotifications)
+            val recentConversations = buildRecentConversationContext(dataRepository.savedConversations.value)
+            val heartbeatPrompt = manager.buildHeartbeatPrompt(
+                recentResponses = recentResponses,
+                pendingEmails = pendingEmails,
+                pendingSms = pendingSms,
+                pendingNotifications = pendingNotifications,
+                recentConversations = recentConversations,
+            )
             // Resolve the heartbeat conversation id BEFORE the AI starts emitting
             // tool calls, so any execute_shell_command call binds to the heartbeat's
             // own persistent bash session rather than the chat the user happens to
@@ -168,8 +178,16 @@ class TaskScheduler(
             )
             manager.markHeartbeatExecuted()
             manager.recordHeartbeat(success = true)
-            if (response.isNotBlank() && "HEARTBEAT_OK" !in response) {
-                dataRepository.addAssistantMessage(response)
+            val proactiveResponse = response.toHeartbeatUserVisibleResponse()
+            if (proactiveResponse != null) {
+                val messageSegments = if (appSettings?.isSegmentedSendingEnabled() != false) {
+                    parseSegmentedAssistantContent(proactiveResponse)
+                } else {
+                    listOf(proactiveResponse.replace(SEGMENT_MARKER, "\n\n").trim())
+                }
+                for (message in messageSegments) {
+                    dataRepository.addAssistantMessage(message)
+                }
                 // Push-notify only when the user won't see the in-app banner.
                 // Tapping the notification deep-links into the heartbeat
                 // conversation via `EXTRA_OPEN_HEARTBEAT` (Android actual).
@@ -178,11 +196,11 @@ class TaskScheduler(
                 // text (```kai-ui {...}```) is unreadable.
                 if (!appInForeground) {
                     val preview = truncateForNotification(
-                        parseMarkdown(response).toSpeakableText(),
+                        parseMarkdown(proactiveResponse).toSpeakableText(),
                     )
                     if (preview.isNotBlank()) {
                         sendHeartbeatNotification(
-                            title = "Kai heartbeat",
+                            title = "ChatMTF",
                             body = preview,
                         )
                     }
@@ -246,6 +264,62 @@ class TaskScheduler(
         // a word boundary 100 chars back would throw away half the preview.
         val cut = if (lastSpace >= HEARTBEAT_NOTIFICATION_PREVIEW_CHARS - 40) lastSpace else window.length
         return window.substring(0, cut).trimEnd().trimEnd(',', ';', ':') + "…"
+    }
+
+    private fun buildRecentConversationContext(conversations: List<Conversation>): List<HeartbeatRecentConversation> =
+        conversations
+            .asSequence()
+            .filter { it.type == Conversation.TYPE_CHAT || it.type == Conversation.TYPE_INTERACTIVE }
+            .sortedByDescending { it.updatedAt }
+            .take(HEARTBEAT_RECENT_CHAT_COUNT)
+            .mapNotNull { conversation ->
+                val messages = conversation.messages
+                    .filter { it.role == "user" || it.role == "assistant" }
+                    .takeLast(HEARTBEAT_RECENT_MESSAGE_COUNT)
+                    .mapNotNull { message ->
+                        val compact = compactHeartbeatMessage(message.content)
+                        if (compact.isBlank()) {
+                            null
+                        } else {
+                            HeartbeatRecentMessage(role = message.role, content = compact)
+                        }
+                    }
+                if (messages.isEmpty()) {
+                    null
+                } else {
+                    HeartbeatRecentConversation(
+                        title = conversation.title,
+                        updatedAtEpochMs = conversation.updatedAt,
+                        messages = messages,
+                    )
+                }
+            }
+            .toList()
+
+    private fun compactHeartbeatMessage(content: String): String {
+        val compact = content
+            .replace(SEGMENT_MARKER, " ")
+            .lineSequence()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && !it.startsWith("```") }
+            .joinToString(" ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        if (compact.length <= HEARTBEAT_RECENT_MESSAGE_CHARS) return compact
+        return compact.take(HEARTBEAT_RECENT_MESSAGE_CHARS).trimEnd() + "…"
+    }
+
+    private fun String.toHeartbeatUserVisibleResponse(): String? {
+        val trimmed = trim()
+        if (trimmed.isEmpty()) return null
+        if (trimmed == "HEARTBEAT_OK") return null
+
+        val cleaned = trimmed
+            .lines()
+            .filterNot { it.trim() == "HEARTBEAT_OK" }
+            .joinToString("\n")
+            .trim()
+        return cleaned.ifBlank { null }
     }
 
     private suspend fun checkNewEmails(isLoading: () -> Boolean) {

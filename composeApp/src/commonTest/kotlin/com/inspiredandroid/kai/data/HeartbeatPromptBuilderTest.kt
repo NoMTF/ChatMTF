@@ -29,8 +29,10 @@ class HeartbeatPromptBuilderTest {
 
     private fun build(
         customOrDefaultPrompt: String = "[TEST HEARTBEAT]",
+        runtime: HeartbeatRuntimeContext? = null,
         heartbeatAdditions: List<ScheduledTask> = emptyList(),
         recentResponses: List<String> = emptyList(),
+        recentConversations: List<HeartbeatRecentConversation> = emptyList(),
         pendingTasks: List<ScheduledTask> = emptyList(),
         emailAccounts: List<EmailAccountSummary> = emptyList(),
         pendingEmails: List<HeartbeatPendingEmail> = emptyList(),
@@ -39,8 +41,10 @@ class HeartbeatPromptBuilderTest {
         promotionCandidates: List<HeartbeatPromotionCandidate> = emptyList(),
     ) = buildHeartbeatPrompt(
         customOrDefaultPrompt = customOrDefaultPrompt,
+        runtime = runtime,
         heartbeatAdditions = heartbeatAdditions,
         recentResponses = recentResponses,
+        recentConversations = recentConversations,
         pendingTasks = pendingTasks,
         emailAccounts = emailAccounts,
         pendingEmails = pendingEmails,
@@ -87,6 +91,42 @@ class HeartbeatPromptBuilderTest {
     fun `omits Previous Heartbeat Results when empty`() {
         val out = build()
         assertFalse("## Previous Heartbeat Results" in out)
+    }
+
+    @Test
+    fun `includes Current Time when runtime is provided`() {
+        val out = build(
+            runtime = HeartbeatRuntimeContext(
+                nowLocalIsoWithOffset = "2026-06-08T21:30:00+09:30",
+                timeZoneId = "Australia/Adelaide",
+                nowUtcIsoString = "2026-06-08T12:00:00Z",
+            ),
+        )
+
+        assertTrue("## Current Time" in out)
+        assertTrue("- Local time: 2026-06-08T21:30:00+09:30 (Australia/Adelaide)" in out)
+        assertTrue("- UTC: 2026-06-08T12:00:00Z" in out)
+    }
+
+    @Test
+    fun `includes Recent Chat Context when conversations are provided`() {
+        val out = build(
+            recentConversations = listOf(
+                HeartbeatRecentConversation(
+                    title = "Late work",
+                    updatedAtEpochMs = 1_000L,
+                    messages = listOf(
+                        HeartbeatRecentMessage(role = "user", content = "Need to finish release"),
+                        HeartbeatRecentMessage(role = "assistant", content = "I can help test it"),
+                    ),
+                ),
+            ),
+        )
+
+        assertTrue("## Recent Chat Context" in out)
+        assertTrue("- Conversation: Late work (updated: 1970-01-01T00:00:01Z)" in out)
+        assertTrue("  - user: Need to finish release" in out)
+        assertTrue("  - assistant: I can help test it" in out)
     }
 
     @Test
